@@ -8,87 +8,140 @@ package pastrysimulator;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+
 import rice.environment.Environment;
+import rice.p2p.commonapi.Id;
+import rice.p2p.commonapi.NodeHandleSet;
 import rice.pastry.NodeHandle;
 import rice.pastry.NodeIdFactory;
 import rice.pastry.PastryNode;
 import rice.pastry.PastryNodeFactory;
+import rice.pastry.leafset.LeafSet;
+import rice.pastry.routing.RoutingTable;
 import rice.pastry.socket.SocketPastryNodeFactory;
 import rice.pastry.standard.RandomNodeIdFactory;
-import rice.tutorial.lesson1.DistTutorial;
 
 /**
- *
- * @author Yennifer Herrera
+ * This tutorial shows how to setup a FreePastry node using the Socket Protocol.
+ * 
+ * @author Jeff Hoye
  */
+public class DistTutorial {
 
+  /**
+   * This constructor sets up a PastryNode.  It will bootstrap to an 
+   * existing ring if it can find one at the specified location, otherwise
+   * it will start a new ring.
+   * 
+   * @param bindport the local port to bind to 
+   * @param bootaddress the IP:port of the node to boot from
+   * @param env the environment for these nodes
+   */
+  public DistTutorial(int bindport, InetSocketAddress bootaddress, Environment env) throws Exception {
+    
+    // Generate the NodeIds Randomly
+    NodeIdFactory nidFactory = new RandomNodeIdFactory(env);
+    
+    // construct the PastryNodeFactory, this is how we use rice.pastry.socket
+    PastryNodeFactory factory = new SocketPastryNodeFactory(nidFactory, bindport, env);
 
-public class PastrySimulator {
-
-    /**
-     * Se configura un PastryNode. Si puede encontrar un anillo ya creado en
-     * locación especificada, de lo contrario crea uno.
-     * 
-     * @param bindport el puerto local de enlace
-     * @param bootaddress IP:puerto del nodo que inicia el anillo (génesis)
-     * @param env entorno para los nodos
-     * @throws Exception si el nodo no puede unirse al anillo satisfactoriamente
-     */
-    public PastrySimulator(int bindport, InetSocketAddress bootaddress, 
-            Environment env) throws Exception {
+    // construct a node
+    PastryNode node = factory.newNode();
+      
+    // construct a new MyApp
+    MyApp app = new MyApp(node);    
+    
+    node.boot(bootaddress);
+    
+    // the node may require sending several messages to fully boot into the ring
+    synchronized(node) {
+      while(!node.isReady() && !node.joinFailed()) {
+        // delay so we don't busy-wait
+        node.wait(500);
         
-        // Genera el NodeId aleatoriamente para un entorno específico.
-        NodeIdFactory nidFactory = new RandomNodeIdFactory(env);
-        
-        // Construye el PastryNodeFactory, quien se encarga de construir, 
-        // inicializa y configurar el Pastry Node
-        PastryNodeFactory factory = new SocketPastryNodeFactory(nidFactory, bindport, env);
-
-        // Retorna null si aún no hay anillo
-        NodeHandle bootHandle = ((SocketPastryNodeFactory)factory).getNodeHandle(bootaddress);
-
-        System.out.println("BootHandle: " + bootHandle);
-        // Construye un nodo. Si el boothandle es null, crea un nuevo anillo
-        PastryNode node = factory.newNode(bootHandle);
-
-        // Puede que el nodo requira enviar múltiples mensaje para unirse
-        // Completamente al anillo
-        synchronized(node) {
-          while(!node.isReady() && !node.joinFailed()) {
-            node.wait(500);
-
-            // Se suspende si el nodo no pudo unirse
-            if (node.joinFailed()) {
-              throw new IOException("Could not join the FreePastry ring.  Reason:"+node.joinFailedReason()); 
-            }
-          }       
+        // abort if can't join
+        if (node.joinFailed()) {
+          throw new IOException("Could not join the FreePastry ring.  Reason:"+node.joinFailedReason()); 
         }
-
-        System.out.println("Finished creating new node "+node);  
-        
+      }       
     }
     
-    public static void main(String[] args) throws Exception {
-        // Loads pastry settings
-        Environment env = new Environment();
+    System.out.println("Finished creating new node "+node);
+    
 
-        // disable the UPnP setting (in case you are testing this on a NATted LAN)
-        env.getParameters().setString("nat_search_policy","never");
-
-        try {
-            // the port to use locally
-            int bindport = Integer.parseInt(args[0]);
-
-            // build the bootaddress from the command line args
-            InetAddress bootaddr = InetAddress.getByName(args[1]);
-            int bootport = Integer.parseInt(args[2]);
-            InetSocketAddress bootaddress = new InetSocketAddress(bootaddr,bootport);
-
-            // launch our node!
-            PastrySimulator ps = new PastrySimulator(bindport, bootaddress, env);
-        }catch(Exception e) {
-            System.out.println("Error");
-            throw e; 
-        }
+    
+    
+    // wait 10 seconds
+    env.getTimeSource().sleep(10000);
+    
+      
+    // route 10 messages
+    for (int i = 0; i < 10; i++) {
+      // pick a key at random
+      Id randId = nidFactory.generateNodeId();
+      
+      // send to that key
+      app.routeMyMsg(randId);
+      
+      // wait a sec
+      env.getTimeSource().sleep(1000);
     }
+
+    // wait 10 seconds
+    env.getTimeSource().sleep(10000);
+    
+    // send directly to my leafset
+    LeafSet leafSet = node.getLeafSet();
+    
+    // this is a typical loop to cover your leafset.  Note that if the leafset
+    // overlaps, then duplicate nodes will be sent to twice
+    for (int i=-leafSet.ccwSize(); i<=leafSet.cwSize(); i++) {
+      if (i != 0) { // don't send to self
+        // select the item
+        NodeHandle nh = leafSet.get(i);
+        
+        // send the message directly to the node
+        app.routeMyMsgDirect(nh);   
+        
+        // wait a sec
+        env.getTimeSource().sleep(1000);
+      }
+    }
+    
+    RoutingTable rt = node.getRoutingTable();
+    System.out.println("Routing Table: ");
+    System.out.println(rt);
+  }
+
+  /**
+   * Usage: 
+   * java [-cp FreePastry-<version>.jar] rice.tutorial.lesson3.DistTutorial localbindport bootIP bootPort
+   * example java rice.tutorial.DistTutorial 9001 pokey.cs.almamater.edu 9001
+   */
+  public static void main(String[] args) throws Exception {
+    // Loads pastry settings
+    Environment env = new Environment();
+
+    // disable the UPnP setting (in case you are testing this on a NATted LAN)
+    env.getParameters().setString("nat_search_policy","never");
+    
+    try {
+      // the port to use locally
+      int bindport = Integer.parseInt(args[0]);
+      
+      // build the bootaddress from the command line args
+      InetAddress bootaddr = InetAddress.getByName(args[1]);
+      int bootport = Integer.parseInt(args[2]);
+      InetSocketAddress bootaddress = new InetSocketAddress(bootaddr,bootport);
+  
+      // launch our node!
+      DistTutorial dt = new DistTutorial(bindport, bootaddress, env);
+    } catch (Exception e) {
+      // remind user how to use
+      System.out.println("Usage:"); 
+      System.out.println("java [-cp FreePastry-<version>.jar] rice.tutorial.lesson3.DistTutorial localbindport bootIP bootPort");
+      System.out.println("example java rice.tutorial.DistTutorial 9001 pokey.cs.almamater.edu 9001");
+      throw e; 
+    }
+  }
 }
