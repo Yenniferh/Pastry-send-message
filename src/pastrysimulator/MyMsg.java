@@ -8,6 +8,7 @@ import rice.p2p.commonapi.Message;
  * An example message.
  * 
  * @author Jeff Hoye
+ * @author Yennifer Herrera
  */
 public class MyMsg implements Message {
   /**

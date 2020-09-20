@@ -8,6 +8,7 @@ package pastrysimulator;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.util.Scanner;
 
 import rice.environment.Environment;
 import rice.p2p.commonapi.Id;
@@ -25,6 +26,7 @@ import rice.pastry.standard.RandomNodeIdFactory;
  * This tutorial shows how to setup a FreePastry node using the Socket Protocol.
  * 
  * @author Jeff Hoye
+ * @author Yennifer Herrera
  */
 public class DistTutorial {
 
@@ -69,50 +71,55 @@ public class DistTutorial {
     System.out.println("Finished creating new node "+node);
     
 
-    
-    
+     
     // wait 10 seconds
     env.getTimeSource().sleep(10000);
     
-      
-    // route 10 messages
-    for (int i = 0; i < 10; i++) {
-      // pick a key at random
-      Id randId = nidFactory.generateNodeId();
-      
-      // send to that key
-      app.routeMyMsg(randId);
-      
-      // wait a sec
-      env.getTimeSource().sleep(1000);
+    try {
+        System.out.println("Bienvenido");
+        Scanner sc = new Scanner(System.in);
+        Scanner scm = new Scanner(System.in);
+        int RES = 0;
+        while(RES !=2){
+            System.out.println("------------------| Selecciona una opción |------------------");
+            System.out.println("1. Enviar un mensaje");
+            System.out.println("2. Salir");
+            int in = sc.nextInt();
+            if(in != 1 && in != 2){
+                throw new Exception("Respuesta inválida. Adios");
+            }else if(in == 2){
+                break;
+            }else {
+                System.out.println("Puede que el mensaje no le llegue a nadie o le llegue al mismo remitente.");
+                System.out.print("Escribe el mensaje: ");
+                String msg = scm.nextLine();
+                Id randId = nidFactory.generateNodeId();
+                SendMessage(msg, app, randId);
+            }
+        }
+    }catch(Exception e){
+        System.out.println("Respuesta inválida. Adios");
+    }finally {
+        System.exit(0);
     }
-
-    // wait 10 seconds
-    env.getTimeSource().sleep(10000);
-    
-    // send directly to my leafset
-    LeafSet leafSet = node.getLeafSet();
-    
-    // this is a typical loop to cover your leafset.  Note that if the leafset
-    // overlaps, then duplicate nodes will be sent to twice
-    for (int i=-leafSet.ccwSize(); i<=leafSet.cwSize(); i++) {
-      if (i != 0) { // don't send to self
-        // select the item
-        NodeHandle nh = leafSet.get(i);
         
-        // send the message directly to the node
-        app.routeMyMsgDirect(nh);   
-        
-        // wait a sec
-        env.getTimeSource().sleep(1000);
-      }
-    }
-    
-    RoutingTable rt = node.getRoutingTable();
-    System.out.println("Routing Table: ");
-    System.out.println(rt);
   }
-
+    
+    /**
+     * Send a message from one node to another
+     * @param cont message content
+     * @param app an app instance, the sender
+     * @param receiver id to route the message
+     */
+    private void SendMessage(String cont, MyApp app, Id receiver){
+      app.routeMyMsg(receiver, cont);
+    }
+  
+//  private void SendMessageNh(String cont, MyApp app, NodeHandle nh){
+//      app.routeMyMsgDirect(nh, cont);
+//  }
+  
+  
   /**
    * Usage: 
    * java [-cp FreePastry-<version>.jar] rice.tutorial.lesson3.DistTutorial localbindport bootIP bootPort

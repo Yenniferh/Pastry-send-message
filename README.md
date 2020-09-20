@@ -1,6 +1,6 @@
 # Pastry Simulator
 
-A [FreePastry](https://www.freepastry.org) implementation. This starts or joins to a Pastry ring and send 10 messages, then send a message to its leafset
+A [FreePastry](https://www.freepastry.org) implementation. It's a basic chat app.
 
 ## How to run
 
@@ -23,3 +23,7 @@ A [FreePastry](https://www.freepastry.org) implementation. This starts or joins 
 ```shell
   java -jar "PastrySimulator.jar" 9000+i [your local IP] 9000
 ```
+
+5. Now, you can send messages
+
+![Chat - Demo](./.github/chat.png)

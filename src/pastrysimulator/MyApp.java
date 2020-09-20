@@ -12,6 +12,7 @@ import rice.p2p.commonapi.RouteMessage;
  * A very simple application.
  * 
  * @author Jeff Hoye
+ * @author Yennifer Herrera
  */
 public class MyApp implements Application {
   /**
@@ -35,18 +36,18 @@ public class MyApp implements Application {
   /**
    * Called to route a message to the id
    */
-  public void routeMyMsg(Id id) {
+  public void routeMyMsg(Id id, String cont) {
     System.out.println(this+" sending to "+id);    
-    Message msg = new MyMsg(endpoint.getId(), id, "Hola");
+    Message msg = new MyMsg(endpoint.getId(), id, cont);
     endpoint.route(id, msg, null);
   }
   
   /**
    * Called to directly send a message to the nh
    */
-  public void routeMyMsgDirect(NodeHandle nh) {
+  public void routeMyMsgDirect(NodeHandle nh, String cont) {
     System.out.println(this+" sending direct to "+nh);    
-    Message msg = new MyMsg(endpoint.getId(), nh.getId(), "Hola");
+    Message msg = new MyMsg(endpoint.getId(), nh.getId(), cont);
     endpoint.route(null, msg, nh);
   }
     
