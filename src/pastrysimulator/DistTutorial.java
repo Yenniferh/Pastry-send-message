@@ -75,33 +75,8 @@ public class DistTutorial {
     // wait 10 seconds
     env.getTimeSource().sleep(10000);
     
-    try {
-        System.out.println("Bienvenido");
-        Scanner sc = new Scanner(System.in);
-        Scanner scm = new Scanner(System.in);
-        int RES = 0;
-        while(RES !=2){
-            System.out.println("------------------| Selecciona una opción |------------------");
-            System.out.println("1. Enviar un mensaje");
-            System.out.println("2. Salir");
-            int in = sc.nextInt();
-            if(in != 1 && in != 2){
-                throw new Exception("Respuesta inválida. Adios");
-            }else if(in == 2){
-                break;
-            }else {
-                System.out.println("Puede que el mensaje no le llegue a nadie o le llegue al mismo remitente.");
-                System.out.print("Escribe el mensaje: ");
-                String msg = scm.nextLine();
-                Id randId = nidFactory.generateNodeId();
-                SendMessage(msg, app, randId);
-            }
-        }
-    }catch(Exception e){
-        System.out.println("Respuesta inválida. Adios");
-    }finally {
-        System.exit(0);
-    }
+    PastryMenu PastryMenuThread = new PastryMenu(app, node, nidFactory);
+    PastryMenuThread.start();
         
   }
     
