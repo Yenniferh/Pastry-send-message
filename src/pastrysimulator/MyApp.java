@@ -29,6 +29,7 @@ public class MyApp implements Application {
     
     // the rest of the initialization code could go here
     
+    
     // now we can receive messages
     this.endpoint.register();
   }

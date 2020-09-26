@@ -8,19 +8,16 @@ package pastrysimulator;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.util.Scanner;
 
 import rice.environment.Environment;
-import rice.p2p.commonapi.Id;
-import rice.p2p.commonapi.NodeHandleSet;
-import rice.pastry.NodeHandle;
+import rice.p2p.past.*;
 import rice.pastry.NodeIdFactory;
 import rice.pastry.PastryNode;
 import rice.pastry.PastryNodeFactory;
-import rice.pastry.leafset.LeafSet;
-import rice.pastry.routing.RoutingTable;
+import rice.pastry.commonapi.PastryIdFactory;
 import rice.pastry.socket.SocketPastryNodeFactory;
 import rice.pastry.standard.RandomNodeIdFactory;
+import rice.persistence.*;
 
 /**
  * This tutorial shows how to setup a FreePastry node using the Socket Protocol.
@@ -29,7 +26,7 @@ import rice.pastry.standard.RandomNodeIdFactory;
  * @author Yennifer Herrera
  */
 public class DistTutorial {
-
+   
   /**
    * This constructor sets up a PastryNode.  It will bootstrap to an 
    * existing ring if it can find one at the specified location, otherwise
@@ -50,8 +47,19 @@ public class DistTutorial {
     // construct a node
     PastryNode node = factory.newNode();
       
+    // used for generating PastContent object Ids.
+    // this implements the "hash function" for our DHT
+    PastryIdFactory idf = new PastryIdFactory(env);
+    
+    String storageDir = "./storage"+node.getId().hashCode();
+    
+    // create the persistent part
+    // Storage stor = new PersistentStorage(idf, storageDirectory, 4 * 1024 * 1024, node
+    // .getEnvironment());
+    Storage stg = new MemoryStorage(idf);
     // construct a new MyApp
-    MyApp app = new MyApp(node);    
+    Past app = new PastImpl(node,new StorageManagerImpl(idf, stg, new LRUCache(
+          new MemoryStorage(idf), 512 * 1024, node.getEnvironment())), 2, "");
     
     node.boot(bootaddress);
     
@@ -70,30 +78,17 @@ public class DistTutorial {
     
     System.out.println("Finished creating new node "+node);
     
-
-     
     // wait 10 seconds
     env.getTimeSource().sleep(10000);
     
-    PastryMenu PastryMenuThread = new PastryMenu(app, node, nidFactory);
+    // TODO: Hacer envío y recepción de files
+    
+    
+    PastryMenu PastryMenuThread = new PastryMenu(app, idf, env);
     PastryMenuThread.start();
         
   }
     
-    /**
-     * Send a message from one node to another
-     * @param cont message content
-     * @param app an app instance, the sender
-     * @param receiver id to route the message
-     */
-    private void SendMessage(String cont, MyApp app, Id receiver){
-      app.routeMyMsg(receiver, cont);
-    }
-  
-//  private void SendMessageNh(String cont, MyApp app, NodeHandle nh){
-//      app.routeMyMsgDirect(nh, cont);
-//  }
-  
   
   /**
    * Usage: 
