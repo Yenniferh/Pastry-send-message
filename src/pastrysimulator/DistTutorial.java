@@ -50,17 +50,8 @@ public class DistTutorial {
     // used for generating PastContent object Ids.
     // this implements the "hash function" for our DHT
     PastryIdFactory idf = new PastryIdFactory(env);
-    
-    String storageDir = "./storage"+node.getId().hashCode();
-    
-    // create the persistent part
-    // Storage stor = new PersistentStorage(idf, storageDirectory, 4 * 1024 * 1024, node
-    // .getEnvironment());
-    Storage stg = new MemoryStorage(idf);
-    // construct a new MyApp
-    Past app = new PastImpl(node,new StorageManagerImpl(idf, stg, new LRUCache(
-          new MemoryStorage(idf), 512 * 1024, node.getEnvironment())), 2, "");
-    
+ 
+    MyScribeClient app = new MyScribeClient(node);
     node.boot(bootaddress);
     
     // the node may require sending several messages to fully boot into the ring
@@ -80,11 +71,10 @@ public class DistTutorial {
     
     // wait 10 seconds
     env.getTimeSource().sleep(10000);
+   
     
-    // TODO: Hacer envío y recepción de files
     
-    
-    PastryMenu PastryMenuThread = new PastryMenu(app, idf, env);
+    PastryMenu PastryMenuThread = new PastryMenu(app, node, env);
     PastryMenuThread.start();
         
   }
