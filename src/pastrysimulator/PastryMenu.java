@@ -51,7 +51,7 @@ public class PastryMenu extends Thread {
                 if (in != 1 && in != 2 && in != 3) {
                     throw new Exception("Respuesta inválida. Adios");
                 } else if (in == 1) {
-                    // System.out.println("Puede que el mensaje no le llegue a nadie o le llegue al mismo remitente.");
+                    System.out.println("Ya estás suscrito. Ahora puedes publicar contenido.");
                     client.subscribe();
                 } else if (in == 2) {
                     System.out.print("Escribe el mensaje: ");
@@ -70,8 +70,10 @@ public class PastryMenu extends Thread {
         }catch (Exception e) {
             System.out.println("Respuesta inválida. Adios");
         } finally {
+            client.unsuscribe();
             env.destroy();
             System.exit(1);
+            
         }
     }
 

@@ -44,11 +44,19 @@ public class MyScribeClient implements ScribeClient, Application {
     }
     
     public void sendMulticast(String msg) {
-        System.out.println("Node "+endpoint.getLocalNodeHandle()+" broadcasting "+msg);
-        MyScribeContent myMessage = new MyScribeContent(endpoint.getLocalNodeHandle(), msg);
-        myScribe.publish(myTopic, myMessage); 
+        if (myScribe.containsTopic(myTopic)) {
+            System.out.println("Node "+endpoint.getLocalNodeHandle()+" broadcasting "+msg);
+            MyScribeContent myMessage = new MyScribeContent(endpoint.getLocalNodeHandle(), msg);
+            myScribe.publish(myTopic, myMessage);
+        }else {
+            System.out.println("Ups. Parece que aún no te has suscrito.");
+        }
     }
 
+    public void unsuscribe() {
+        myScribe.unsubscribe(myTopic, this);
+    }
+    
     @Override
     public boolean anycast(Topic topic, ScribeContent content) {
         boolean returnValue = myScribe.getEnvironment().getRandomSource().nextInt(3) == 0;
